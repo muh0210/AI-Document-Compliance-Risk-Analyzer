@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-powered document compliance and risk analyzer. Upload contracts, policies, and legal documents for instant compliance scoring, risk detection, and actionable recommendations.">
+    <title>AI Document Compliance & Risk Analyzer</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
+</head>
+<body>
+
+    <!-- ══════════ HEADER ══════════ -->
+    <header class="header">
+        <div class="container">
+            <div class="header-badge">
+                <span class="pulse-dot"></span>
+                AI-Powered Analysis Engine
+            </div>
+            <h1>Document Compliance<br>& Risk Analyzer</h1>
+            <p>Upload any business document — contracts, policies, agreements — and get instant AI-powered compliance scoring, risk detection, and actionable recommendations.</p>
+        </div>
+    </header>
+
+    <!-- ══════════ UPLOAD ══════════ -->
+    <section class="upload-section">
+        <div class="container">
+            <div class="upload-zone" id="upload-zone">
+                <span class="icon">📄</span>
+                <h3>Drop your document here</h3>
+                <p>or click to browse files</p>
+                <div class="file-types">
+                    <span class="file-type-badge">PDF</span>
+                    <span class="file-type-badge">DOCX</span>
+                    <span class="file-type-badge">TXT</span>
+                </div>
+                <input type="file" id="file-input" accept=".pdf,.docx,.doc,.txt">
+                <button class="upload-btn" id="browse-btn">📁 Browse Files</button>
+                <div class="file-info" id="file-info">
+                    <span class="file-icon">📎</span>
+                    <div>
+                        <div class="file-name" id="file-name"></div>
+                        <div class="file-size" id="file-size"></div>
+                    </div>
+                </div>
+            </div>
+            <div style="text-align:center">
+                <button class="analyze-btn" id="analyze-btn">
+                    🔍 Analyze Document
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ══════════ LOADING ══════════ -->
+    <div class="loading-overlay" id="loading">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">Analyzing Document...</div>
+        <div class="loading-sub" id="loading-sub">Extracting text and running NLP pipeline</div>
+    </div>
+
+    <!-- ══════════ RESULTS ══════════ -->
+    <section class="results-section" id="results">
+        <div class="container">
+
+            <!-- Score -->
+            <div class="glass-card score-card" id="score-card"></div>
+
+            <!-- Document Info -->
+            <div class="glass-card" id="doc-info-card"></div>
+
+            <!-- Critical Findings -->
+            <div class="glass-card" id="critical-card"></div>
+
+            <!-- Clauses -->
+            <div class="glass-card" id="clauses-card"></div>
+
+            <!-- Risk Alerts -->
+            <div class="glass-card" id="risks-card"></div>
+
+            <!-- Action Items -->
+            <div class="glass-card" id="actions-card"></div>
+
+            <!-- Rewrites -->
+            <div class="glass-card" id="rewrites-card"></div>
+
+        </div>
+    </section>
+
+    <!-- ══════════ ERROR TOAST ══════════ -->
+    <div class="error-toast" id="error-toast"></div>
+
+    <!-- ══════════ FOOTER ══════════ -->
+    <footer class="footer">
+        <div class="container">
+            <p>🛡️ AI Document Compliance & Risk Analyzer — v1.0.0</p>
+            <p style="margin-top:4px">Built with NLP + Rule Engine + AI Explanation Engine</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

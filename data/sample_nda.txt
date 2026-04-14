@@ -1,0 +1,66 @@
+NON-DISCLOSURE AGREEMENT (NDA)
+
+This Non-Disclosure Agreement ("Agreement") is entered into as of April 1, 2025.
+
+BETWEEN:
+TechVentures LLC, a Delaware limited liability company ("Disclosing Party")
+AND:
+Innovation Partners Inc., a California corporation ("Receiving Party")
+
+1. DEFINITION OF CONFIDENTIAL INFORMATION
+
+"Confidential Information" means any and all non-public information, whether written, oral, electronic, or visual, that is disclosed by the Disclosing Party to the Receiving Party, including but not limited to:
+- Trade secrets, inventions, and proprietary technology
+- Business plans, financial data, and strategic information
+- Customer lists, marketing strategies, and pricing information
+- Software code, algorithms, and technical documentation
+- Employee information and organizational data
+
+2. OBLIGATIONS OF RECEIVING PARTY
+
+The Receiving Party shall:
+(a) Hold all Confidential Information in strict confidence
+(b) Not disclose Confidential Information to any third party without prior written consent
+(c) Use Confidential Information solely for the purpose of evaluating a potential business relationship
+(d) Limit access to Confidential Information to employees who have a need to know
+(e) Protect Confidential Information with at least the same degree of care used for its own confidential information, but no less than reasonable care
+
+3. EXCLUSIONS
+
+Confidential Information shall not include information that:
+(a) Is or becomes publicly available through no fault of the Receiving Party
+(b) Was known to the Receiving Party prior to disclosure
+(c) Is independently developed by the Receiving Party without use of Confidential Information
+(d) Is rightfully received from a third party without restriction on disclosure
+
+4. TERM AND TERMINATION
+
+This Agreement shall remain in effect for a period of 3 years from the Effective Date. Either party may terminate this Agreement with 30 days written notice. The confidentiality obligations shall survive termination for an additional period of 5 years.
+
+5. RETURN OF MATERIALS
+
+Upon termination or request, the Receiving Party shall promptly return or destroy all materials containing Confidential Information and certify such destruction in writing within 14 days.
+
+6. GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of Delaware without regard to conflicts of law principles.
+
+7. DISPUTE RESOLUTION
+
+Any disputes shall be resolved through binding arbitration in Wilmington, Delaware, under the rules of the American Arbitration Association. The prevailing party shall be entitled to recover reasonable attorney's fees.
+
+8. REMEDIES
+
+The Receiving Party acknowledges that any breach of this Agreement may cause irreparable harm. The Disclosing Party shall be entitled to seek injunctive relief in addition to any other remedies available at law or in equity.
+
+9. GENERAL PROVISIONS
+
+This Agreement constitutes the entire agreement between the parties regarding the subject matter hereof. No modification shall be effective unless in writing and signed by both parties. This Agreement may not be assigned without the prior written consent of the other party.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+
+TECHVENTURES LLC                    INNOVATION PARTNERS INC.
+By: _________________________      By: _________________________
+Name:                               Name:
+Title:                              Title:
+Date:                               Date:

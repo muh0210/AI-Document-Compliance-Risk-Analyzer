@@ -1,0 +1,77 @@
+SERVICE LEVEL AGREEMENT (SLA)
+
+BETWEEN: Cloud Solutions Inc. ("Provider")
+AND: Enterprise Corp. ("Client")
+
+EFFECTIVE DATE: January 15, 2025
+
+1. SERVICE DESCRIPTION
+
+The Provider shall deliver cloud hosting services including server infrastructure, data storage, application hosting, and technical support as described in Exhibit A attached hereto.
+
+2. SERVICE AVAILABILITY
+
+The Provider guarantees a minimum uptime of 99.9% measured on a monthly basis. Scheduled maintenance windows shall be communicated at least 48 hours in advance and shall not exceed 4 hours per month.
+
+3. PAYMENT TERMS
+
+The Client shall pay a monthly fee of $12,500 due within 30 days of receipt of invoice. Late payments shall incur a penalty of 1.5% per month on the outstanding balance. All fees are exclusive of applicable taxes.
+
+Payment shall be made via wire transfer to the account specified in Schedule B.
+
+4. PERFORMANCE METRICS
+
+The following metrics shall be monitored and reported monthly:
+- Server response time: less than 200ms
+- Data throughput: minimum 1Gbps
+- Support ticket resolution: within 4 business hours for critical issues
+
+5. TERMINATION
+
+Either party may terminate this Agreement with 90 days written notice. The Provider may terminate immediately if the Client fails to make payment within 60 days of the due date. Upon termination, the Provider shall assist with data migration for a period of 30 days.
+
+6. LIABILITY
+
+The Provider's total aggregate liability under this Agreement shall not exceed the total fees paid by the Client in the preceding 12 months. Neither party shall be liable for indirect, incidental, or consequential damages.
+
+7. CONFIDENTIALITY
+
+Both parties agree to maintain the confidentiality of all proprietary information exchanged during the term of this Agreement. Confidential information shall not be disclosed to third parties without prior written consent. This obligation shall survive termination for a period of 3 years.
+
+8. DATA PROTECTION
+
+The Provider shall comply with all applicable data protection regulations including GDPR and CCPA. Personal data shall be processed only in accordance with the Client's documented instructions. The Provider shall implement appropriate technical and organizational measures to ensure data security.
+
+9. FORCE MAJEURE
+
+Neither party shall be liable for failure to perform obligations due to circumstances beyond reasonable control, including but not limited to natural disasters, acts of war, pandemics, government actions, or widespread infrastructure failures.
+
+10. DISPUTE RESOLUTION
+
+Any disputes arising from this Agreement shall first be submitted to mediation. If unresolved within 30 days, disputes shall be submitted to binding arbitration under the rules of the American Arbitration Association.
+
+11. GOVERNING LAW
+
+This Agreement shall be governed by and construed in accordance with the laws of the State of Delaware, United States.
+
+12. INDEMNIFICATION
+
+Each party agrees to indemnify, defend, and hold harmless the other party from any claims, damages, or expenses arising from the indemnifying party's breach of this Agreement or negligent acts.
+
+13. INTELLECTUAL PROPERTY
+
+All intellectual property rights in the services and any custom developments shall remain the property of the Provider. The Client retains all rights to their data and content hosted on the platform.
+
+14. WARRANTY
+
+The Provider warrants that the services will be performed in a professional and workmanlike manner consistent with industry standards. This warranty does not apply to issues caused by the Client's misuse or third-party software.
+
+IN WITNESS WHEREOF, the parties have executed this Agreement as of the date first written above.
+
+___________________________
+Cloud Solutions Inc.
+Authorized Signatory
+
+___________________________
+Enterprise Corp.
+Authorized Signatory

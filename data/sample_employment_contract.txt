@@ -1,0 +1,76 @@
+EMPLOYMENT CONTRACT
+
+Between: Global Technologies Ltd. ("Employer")
+And: [Employee Name] ("Employee")
+
+Position: Senior Software Engineer
+Department: Engineering
+Start Date: May 1, 2025
+Location: Remote / New York Office
+
+1. DUTIES AND RESPONSIBILITIES
+
+The Employee shall perform duties as reasonably assigned by the Employer, including but not limited to software development, code review, system architecture, and mentoring junior team members. The Employee shall devote full working time and attention to the Employer's business.
+
+2. COMPENSATION
+
+Base Salary: $145,000 per annum, payable bi-weekly via direct deposit.
+Annual Bonus: Up to 15% of base salary, based on individual and company performance metrics defined in the Performance Review Framework.
+Equity: 10,000 stock options vesting over 4 years with a 1-year cliff, subject to the terms of the Stock Option Plan.
+
+3. BENEFITS
+
+The Employee shall be entitled to:
+- Health, dental, and vision insurance (effective from start date)
+- 401(k) plan with 4% employer match
+- 20 days paid vacation per year
+- 10 days sick leave per year
+- Professional development allowance of $2,500 per year
+
+4. CONFIDENTIALITY
+
+The Employee agrees to maintain strict confidentiality of all proprietary information, trade secrets, client data, source code, business strategies, and financial information of the Employer. This obligation shall continue for 2 years after termination of employment.
+
+5. INTELLECTUAL PROPERTY
+
+All inventions, discoveries, software, documentation, and other works created by the Employee during the course of employment shall be the exclusive property of the Employer. The Employee hereby assigns all rights, title, and interest in such works to the Employer.
+
+6. NON-COMPETE
+
+For a period of 12 months following termination, the Employee shall not directly or indirectly compete with the Employer or solicit any clients or employees of the Employer within the geographic areas where the Employer conducts business.
+
+7. TERMINATION
+
+Either party may terminate this Agreement:
+(a) With 30 days written notice for any reason
+(b) Immediately for cause, including material breach, gross misconduct, or violation of company policies
+(c) The Employer may terminate with 2 weeks notice during the initial 90-day probationary period
+
+Upon termination, the Employee shall return all company property, including laptops, access cards, and documents, within 5 business days.
+
+8. SEVERANCE
+
+If terminated without cause, the Employee shall receive:
+- 3 months base salary as severance pay
+- Continuation of health benefits for 3 months (COBRA)
+- Accelerated vesting of stock options for 6 additional months
+
+9. DISPUTE RESOLUTION
+
+Any disputes arising from this Agreement shall be resolved through mediation, followed by binding arbitration if mediation fails. Arbitration shall be conducted in New York under the rules of JAMS.
+
+10. GOVERNING LAW
+
+This Agreement shall be governed by the laws of the State of New York.
+
+11. DATA PROTECTION
+
+The Employer shall process the Employee's personal data in accordance with applicable privacy laws including GDPR and CCPA. The Employee has the right to access, correct, and request deletion of their personal data.
+
+SIGNATURES:
+
+Global Technologies Ltd.                    Employee
+By: _________________________              _________________________
+Name:                                       Name:
+Title: Chief People Officer                 Date:
+Date:
