@@ -1,129 +1,125 @@
 """
-AI Explanation Engine
-Generates plain-English explanations linking risks to business impact.
+AI Explanation Generator
+Produces human-readable narratives from analysis results:
+  - Overall assessment
+  - Critical findings with business-impact explanations
+  - Prioritised action items
 """
 
 
-def generate_explanations(clause_result, risk_result, score_result):
-    explanations = {
-        'overall_assessment': _gen_overall(score_result),
-        'critical_findings': _gen_critical(clause_result, risk_result),
-        'clause_explanations': _gen_clauses(clause_result),
-        'risk_explanations': _gen_risks(risk_result),
-        'action_items': _gen_actions(clause_result, risk_result)
+def generate_explanations(clauses: dict, risks: dict, score: dict) -> dict:
+    """
+    Generate AI-driven explanations for the analysis results.
+
+    Returns dict with overall_assessment, critical_findings, action_items.
+    """
+    overall = _overall(score)
+    critical = _critical(clauses, risks)
+    actions = _actions(clauses, risks)
+
+    return {
+        "overall_assessment": overall,
+        "critical_findings": critical,
+        "action_items": actions,
     }
-    return explanations
 
 
-def _gen_overall(score_result):
-    s = score_result['score']
-    g = score_result['grade']
-    l = score_result['label']
-    if s >= 80:
-        t, a = "Strong compliance fundamentals.", "Minor refinements could improve it."
-    elif s >= 60:
-        t, a = "Moderate compliance with notable gaps.", "Several areas need attention."
-    elif s >= 40:
-        t, a = "Significant compliance deficiencies.", "Substantial revisions recommended."
+# ── Helpers ──────────────────────────────────────────────
+
+_MISSING_IMPACT = {
+    "payment_terms": "Without clear payment terms, disputes over amounts and timing are likely.",
+    "termination": "No clear exit path -- parties may be trapped in unfavourable agreements.",
+    "liability": "Unlimited financial exposure from claims threatens business viability.",
+    "confidentiality": "Sensitive information may be shared without legal protection.",
+    "ip_rights": "Ownership of created work is unclear, risking future IP disputes.",
+    "indemnification": "No protection against third-party claims or losses.",
+    "dispute_resolution": "No defined mechanism for resolving disagreements.",
+    "governing_law": "Legal jurisdiction is undefined, complicating enforcement.",
+    "force_majeure": "No protection against extraordinary events (pandemic, disaster, etc.).",
+    "data_protection": "Personal data handling is unaddressed, risking regulatory fines.",
+    "warranty": "No quality assurance commitments are defined.",
+    "non_compete": "No restrictions on competitive activities post-agreement.",
+}
+
+_CRITICAL_IDS = {"payment_terms", "termination", "liability", "confidentiality"}
+
+
+def _overall(score: dict) -> dict:
+    s = score["score"]
+    g = score["grade"]
+    if s >= 70:
+        narrative = (
+            f"This document scores {s}/100 ({g}), indicating solid compliance. "
+            "Most critical clauses are present and risks are manageable. "
+            "Review the recommended actions to further strengthen the document."
+        )
+    elif s >= 50:
+        narrative = (
+            f"This document scores {s}/100 ({g}). Several important areas need attention. "
+            "Key clauses may be missing and some risk indicators were detected. "
+            "Address the action items below before signing."
+        )
     else:
-        t, a = "Critical compliance issues presenting serious risk.", "Major restructuring and legal review strongly recommended."
-    return {'summary': f"Grade: {g} ({s}/100) — {l}", 'narrative': f"{t} {a}", 'score': s, 'grade': g}
+        narrative = (
+            f"This document scores {s}/100 ({g}), indicating significant compliance gaps. "
+            "Multiple critical clauses are missing and high-risk language was detected. "
+            "This document should not be signed without substantial revisions."
+        )
+    return {"narrative": narrative, "score_summary": f"{s}/100 ({g})"}
 
 
-def _gen_critical(clause_result, risk_result):
-    critical = []
-    impacts = {
-        "Payment Terms": "Without clear payment terms, disputes over amounts and timing are likely.",
-        "Termination Clause": "No clear exit path — parties may be trapped in unfavorable agreements.",
-        "Liability & Limitation": "Unlimited financial exposure from claims threatens business viability.",
-        "Confidentiality / NDA": "Sensitive information and trade secrets have no contractual safeguards.",
-    }
-    for cl in clause_result['summary']['missing_critical']:
-        critical.append({'type': 'missing_clause', 'severity': 'HIGH', 'icon': '❌',
-                         'title': f"Missing: {cl}", 'explanation': impacts.get(cl, f"Missing {cl} reduces legal completeness.")})
-    seen = set()
-    for r in risk_result['risks']:
-        if r['severity'] == 'HIGH' and r['category'] not in seen:
-            seen.add(r['category'])
-            critical.append({'type': 'high_risk', 'severity': 'HIGH', 'icon': '🔴',
-                             'title': r['category_label'], 'explanation': r['description'], 'evidence': r['sentence'][:120]})
-            if len(seen) >= 5:
-                break
-    return critical
+def _critical(clauses: dict, risks: dict) -> list:
+    findings = []
+    for cid, c in clauses["detected"].items():
+        if not c["found"] and cid in _CRITICAL_IDS:
+            findings.append({
+                "title": f"Missing: {c['label']}",
+                "icon": "[!]",
+                "severity": "HIGH",
+                "explanation": _MISSING_IMPACT.get(cid, "This clause is missing from the document."),
+                "evidence": c.get("evidence", ""),
+            })
+
+    high_risks = [r for r in risks["risks"] if r["severity"] == "HIGH"]
+    for r in high_risks[:3]:
+        findings.append({
+            "title": r["category_label"],
+            "icon": "[!]",
+            "severity": "HIGH",
+            "explanation": r["description"],
+            "evidence": r["sentence"][:120],
+        })
+
+    return findings
 
 
-def _gen_clauses(clause_result):
-    explanations = []
-    missing_text = {
-        "payment": "No payment terms detected — missing compensation amounts, schedules, or invoicing procedures.",
-        "termination": "No termination clause found — no specification for how/when the agreement can end.",
-        "liability": "No liability limitation — parties may face unlimited financial risk.",
-        "confidentiality": "No confidentiality provisions — shared information has no protection.",
-        "indemnification": "No indemnification clause — no protection against third-party claims.",
-        "force_majeure": "No force majeure clause — no provisions for extraordinary events.",
-        "dispute_resolution": "No dispute resolution mechanism — conflicts default to costly litigation.",
-        "governing_law": "No governing law specified — unclear which jurisdiction applies.",
-        "warranty": "No warranty provisions — no quality guarantees for deliverables.",
-        "intellectual_property": "No IP clause — ownership of created works undefined.",
-        "non_compete": "No non-compete terms detected.",
-        "data_protection": "No data protection provisions — no safeguards for personal data.",
-    }
-    for cid, c in clause_result['detected'].items():
-        if c['found']:
-            explanations.append({'clause': c['label'], 'icon': c['icon'], 'status': 'present', 'status_icon': '✅',
-                                 'explanation': f"{c['label']} detected ({c['confidence']}% confidence).",
-                                 'evidence': c['evidence'][:2], 'impact': 'positive'})
-        else:
-            explanations.append({'clause': c['label'], 'icon': c['icon'], 'status': 'missing', 'status_icon': '❌',
-                                 'explanation': missing_text.get(cid, f"{c['label']} not detected. {c['description']}."),
-                                 'evidence': [], 'impact': 'negative'})
-    explanations.sort(key=lambda x: 0 if x['status'] == 'missing' else 1)
-    return explanations
+def _actions(clauses: dict, risks: dict) -> list:
+    items = []
 
+    # Missing-clause actions (critical first)
+    for cid in list(_CRITICAL_IDS) + [k for k in clauses["detected"] if k not in _CRITICAL_IDS]:
+        c = clauses["detected"][cid]
+        if not c["found"]:
+            sev = "HIGH" if cid in _CRITICAL_IDS else "MEDIUM"
+            verb = "Add" if sev == "HIGH" else "Consider adding"
+            items.append({
+                "action": f"{verb} {c['label']}",
+                "detail": _MISSING_IMPACT.get(cid, c["description"]),
+                "severity": sev,
+                "icon": "[!]" if sev == "HIGH" else "[+]",
+            })
 
-def _gen_risks(risk_result):
-    impacts = {
-        "vague_language": "Vague wording leads to different interpretations and disputes.",
-        "ambiguous_obligations": "Unclear obligations cause disagreements on requirements.",
-        "deadline_risk": "No specific deadlines makes enforcement impossible.",
-        "liability_exposure": "High liability exposure can cause significant financial losses.",
-        "automatic_renewal": "Auto-renewal may lock parties into outdated agreements.",
-        "unilateral_changes": "One-sided modification rights alter agreements without consent.",
-        "weak_enforcement": "Non-binding language reduces enforceability.",
-        "structural": "Poor structure makes navigation and enforcement difficult.",
-    }
-    return [{'category': r['category_label'], 'severity': r['severity'], 'icon': r['icon'],
-             'trigger': r.get('trigger', ''), 'sentence': r['sentence'][:150],
-             'explanation': r['description'],
-             'business_impact': impacts.get(r['category'], "May reduce document effectiveness.")}
-            for r in risk_result['risks']]
+    # Risk-based actions
+    seen_cats = set()
+    for r in risks["risks"]:
+        if r["category"] not in seen_cats:
+            seen_cats.add(r["category"])
+            if r["severity"] == "HIGH":
+                items.append({
+                    "action": f"Review: {r['category_label']}",
+                    "detail": r["description"],
+                    "severity": "HIGH",
+                    "icon": "[!]",
+                })
 
-
-def _gen_actions(clause_result, risk_result):
-    actions = []
-    p = 1
-    clause_actions = {
-        "Payment Terms": "Define amounts, schedules (Net 30), methods, late penalties, invoicing.",
-        "Termination Clause": "Specify conditions, notice periods (30 days), post-termination obligations.",
-        "Liability & Limitation": "Add caps (e.g., contract value), exclude consequential damages.",
-        "Confidentiality / NDA": "Define confidential info, protection obligations, duration.",
-    }
-    for cl in clause_result['summary']['missing_critical']:
-        actions.append({'priority': p, 'severity': 'HIGH', 'action': f"Add {cl}",
-                        'detail': clause_actions.get(cl, f"Draft comprehensive {cl} section."), 'icon': '🔴'})
-        p += 1
-    for cid, c in clause_result['detected'].items():
-        if not c['found'] and c['label'] not in clause_result['summary']['missing_critical']:
-            actions.append({'priority': p, 'severity': 'MEDIUM', 'action': f"Consider adding {c['label']}",
-                            'detail': f"{c['description']} — adds legal protection.", 'icon': '🔶'})
-            p += 1
-    seen = set()
-    for r in risk_result['risks']:
-        if r['severity'] == 'HIGH' and r['category'] not in seen:
-            seen.add(r['category'])
-            actions.append({'priority': p, 'severity': 'HIGH', 'action': f"Address {r['category_label']}",
-                            'detail': r['description'], 'icon': '🔴'})
-            p += 1
-    sev = {'HIGH': 0, 'MEDIUM': 1, 'LOW': 2}
-    actions.sort(key=lambda x: (sev.get(x['severity'], 99), x['priority']))
-    return actions
+    return items
