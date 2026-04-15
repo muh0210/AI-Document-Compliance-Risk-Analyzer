@@ -1,29 +1,10 @@
-# Byte-compiled / optimized / DLL files
 __pycache__/
-*.py[cod]
-*$py.class
-
-# Virtual environments
-venv/
-env/
-.env/
-
-# IDE
+*.pyc
+*.pyo
+.env
+outputs/
+*.egg-info/
+dist/
+build/
 .vscode/
 .idea/
-*.swp
-*.swo
-
-# OS
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Project
-outputs/
-*.pdf
-data/*.pdf
-data/*.docx
-
-# Gemini
-.gemini/
