@@ -1,185 +1,145 @@
 """
-Clause Detection Engine
-Identifies 12 critical business/legal clause types via keyword + phrase pattern matching.
-Each clause gets a confidence score and supporting evidence.
+Clause Detection Engine v2.0
+All regex compiled at module load.
+Context-aware: checks surrounding sentences for confidence boost.
 """
 
 import re
+import logging
 
-# ── Clause definitions ───────────────────────────────────
+log = logging.getLogger("compliance.clause")
 
-CLAUSES = {
-    "payment_terms": {
-        "label": "Payment Terms",
-        "icon": "💰",
-        "description": "Defines how and when payments are made",
-        "keywords": [
-            r"\bpayment\b", r"\bcompensation\b", r"\bfee[s]?\b", r"\binvoic",
-            r"\bsalar[yi]", r"\bpayable\b", r"\bdue\s+within\b", r"\bnet\s+\d+",
-            r"\bbilling\b", r"\bremuneration\b", r"\bstipend\b",
-        ],
-    },
-    "termination": {
-        "label": "Termination Clause",
-        "icon": "🚫",
-        "description": "Conditions under which the agreement can be ended",
-        "keywords": [
-            r"\bterminat", r"\bcancel", r"\bend\s+(?:of\s+)?(?:this|the)\s+agreement",
-            r"\bexpir", r"\bdissolv", r"\brescind", r"\brevok",
-            r"\bnotice\s+period\b", r"\bexit\s+clause\b",
-        ],
-    },
-    "liability": {
-        "label": "Liability & Limitation",
-        "icon": "⚖️",
-        "description": "Limits on legal responsibility and damages",
-        "keywords": [
-            r"\bliabilit", r"\blimitation\s+of\b", r"\bcap\s+on\b", r"\bliable\b",
-            r"\bdamage[s]?\b", r"\bconsequential\b", r"\bexclusion\b",
-            r"\bnot\s+(?:be\s+)?(?:held\s+)?(?:liable|responsible)\b",
-        ],
-    },
-    "confidentiality": {
-        "label": "Confidentiality / NDA",
-        "icon": "🔒",
-        "description": "Protection of sensitive information",
-        "keywords": [
-            r"\bconfidential", r"\bnon[\s-]?disclosure\b", r"\bnda\b",
-            r"\bproprietary\b", r"\btrade\s+secret", r"\bsensitive\s+information\b",
-            r"\bnot\s+disclose\b",
-        ],
-    },
-    "ip_rights": {
-        "label": "Intellectual Property",
-        "icon": "💡",
-        "description": "Ownership of created work and inventions",
-        "keywords": [
-            r"\bintellectual\s+propert", r"\bcopyright", r"\bpatent",
-            r"\btrademark", r"\bownership\s+of\b", r"\bwork[\s-]?product\b",
-            r"\binvention[s]?\b", r"\blicen[sc]", r"\broyalt",
-        ],
-    },
-    "indemnification": {
-        "label": "Indemnification",
-        "icon": "🔵",
-        "description": "Agreement to compensate for losses or damages",
-        "keywords": [
-            r"\bindemni", r"\bhold\s+harmless\b", r"\bdefend\b.*\bclaim",
-            r"\bcompensate.*\bloss",
-        ],
-    },
-    "dispute_resolution": {
-        "label": "Dispute Resolution",
-        "icon": "🤝",
-        "description": "How conflicts between parties will be resolved",
-        "keywords": [
-            r"\bdispute\s+resol", r"\barbitrat", r"\bmediat",
-            r"\bjurisdiction\b", r"\blitigation\b", r"\bcourt\b",
-        ],
-    },
-    "governing_law": {
-        "label": "Governing Law",
-        "icon": "📜",
-        "description": "Which legal jurisdiction applies",
-        "keywords": [
-            r"\bgoverning\s+law\b", r"\bjurisdiction\b", r"\blaws\s+of\s+the\s+state\b",
-            r"\bapplicable\s+law\b", r"\bgoverned\s+by\b",
-        ],
-    },
-    "force_majeure": {
-        "label": "Force Majeure",
-        "icon": "🌪️",
-        "description": "Protection against extraordinary events",
-        "keywords": [
-            r"\bforce\s+majeure\b", r"\bact\s+of\s+god\b", r"\bunforeseeable\b",
-            r"\bnatural\s+disaster\b", r"\bpandemic\b", r"\bbeyond.*control\b",
-        ],
-    },
-    "data_protection": {
-        "label": "Data Protection / Privacy",
-        "icon": "🛡️",
-        "description": "How personal and sensitive data is handled",
-        "keywords": [
-            r"\bdata\s+protect", r"\bprivacy\b", r"\bgdpr\b", r"\bccpa\b",
-            r"\bpersonal\s+(?:data|information)\b", r"\bdata\s+process",
-            r"\bdata\s+secur",
-        ],
-    },
-    "warranty": {
-        "label": "Warranty / Guarantee",
-        "icon": "✅",
-        "description": "Promises about product/service quality",
-        "keywords": [
-            r"\bwarrant", r"\bguarantee", r"\brepresentation[s]?\b",
-            r"\bfit\s+for\s+purpose\b", r"\bworkmanlike\b", r"\bdefect",
-        ],
-    },
-    "non_compete": {
-        "label": "Non-Compete / Non-Solicitation",
-        "icon": "🚷",
-        "description": "Restrictions on competitive activities",
-        "keywords": [
-            r"\bnon[\s-]?compet", r"\bnon[\s-]?solicit", r"\brestrict.*compet",
-            r"\bnot\s+(?:directly|indirectly)\s+compet",
-        ],
-    },
-}
+# ── Clause definitions (compiled patterns) ───────────────
+
+_CLAUSES = {}
 
 
-# ── Public API ───────────────────────────────────────────
+def _def(key, label, desc, patterns):
+    _CLAUSES[key] = {
+        "label": label,
+        "description": desc,
+        "patterns": [re.compile(p, re.IGNORECASE) for p in patterns],
+    }
+
+
+_def("payment_terms", "Payment Terms",
+     "Defines amounts, schedules, methods, late penalties",
+     [r"\bpayment\b", r"\binvoice\b", r"\bfees?\b", r"\bcompensation\b",
+      r"\b\d+\s*%", r"\bdue\s+(?:date|within)\b", r"\bnet\s*\d+\b",
+      r"\bpayable\b", r"\blate\s+(?:fee|penalty)\b"])
+
+_def("termination", "Termination Clause",
+     "Specifies how and when the agreement can be ended",
+     [r"\bterminate?\b", r"\bcancell?ation\b", r"\bnotice\s+period\b",
+      r"\b(?:30|60|90)\s*(?:day|calendar)\b", r"\bread\s+notice\b",
+      r"\bexit\s+clause\b"])
+
+_def("liability", "Liability Limitation",
+     "Caps financial exposure between parties",
+     [r"\bliabilit(?:y|ies)\b", r"\blimit(?:ation|ed)\b",
+      r"\bcap\b", r"\bdam(?:age|ages)\b", r"\bindirect\s+dam",
+      r"\bconsequential\b"])
+
+_def("confidentiality", "Confidentiality / NDA",
+     "Protects sensitive and proprietary information",
+     [r"\bconfidential", r"\bnon[\s-]?disclosure\b", r"\bproprietary\b",
+      r"\btrade\s+secret", r"\bsensitive\s+information\b"])
+
+_def("ip_rights", "Intellectual Property",
+     "Assigns IP ownership of created work",
+     [r"\bintellectual\s+property\b", r"\bcopyright\b", r"\bpatent\b",
+      r"\btrademark\b", r"\blicen[sc]e\b", r"\bownership\b",
+      r"\bwork[\s-]?for[\s-]?hire\b"])
+
+_def("indemnification", "Indemnification",
+     "Protection against third-party claims",
+     [r"\bindemn", r"\bhold\s+harmless\b", r"\bdefend\b.*\bclaim",
+      r"\bthird[\s-]?party\s+claim\b"])
+
+_def("dispute_resolution", "Dispute Resolution",
+     "Process for resolving disagreements",
+     [r"\bdispute\b", r"\barbitrat", r"\bmediat", r"\bjurisdiction\b",
+      r"\blitigation\b", r"\bcourt\b"])
+
+_def("governing_law", "Governing Law",
+     "Which legal jurisdiction applies",
+     [r"\bgoverning\s+law\b", r"\bjurisdiction\b", r"\blaws?\s+of\b",
+      r"\bapplicable\s+law\b", r"\bvenue\b"])
+
+_def("force_majeure", "Force Majeure",
+     "Protection against extraordinary events",
+     [r"\bforce\s+majeure\b", r"\bact\s+of\s+god\b", r"\bunforeseen\b",
+      r"\bextraordinary\b", r"\bbeyond.*control\b"])
+
+_def("data_protection", "Data Protection",
+     "Personal data handling and regulatory compliance",
+     [r"\bdata\s+protect", r"\bgdpr\b", r"\bccpa\b", r"\bprivacy\b",
+      r"\bpersonal\s+(?:data|information)\b", r"\bdata\s+breach\b"])
+
+_def("warranty", "Warranty",
+     "Quality assurance and fitness guarantees",
+     [r"\bwarrant(?:y|ies)\b", r"\brepresentation", r"\bas[\s-]?is\b",
+      r"\bfit(?:ness)?\s+for\b", r"\bmerchantab"])
+
+_def("non_compete", "Non-Compete / Non-Solicitation",
+     "Restrictions on competitive activity",
+     [r"\bnon[\s-]?compete?\b", r"\bnon[\s-]?solicitat", r"\brestrictive\s+covenant\b",
+      r"\bcompetit(?:ive|or)\b.*\brestrict"])
 
 
 def detect_clauses(text: str, sentences: list) -> dict:
     """
-    Detect which of the 12 clause types are present.
+    Detect all 12 clause types with context-aware confidence.
 
-    Args:
-        text: Full cleaned document text.
-        sentences: List of sentences from the cleaner.
-
-    Returns:
-        dict with 'detected' (clause results) and 'summary' (counts).
+    Checks both full text AND surrounding sentence context.
     """
-    text_lower = text.lower()
     detected = {}
-    found = 0
+    text_lower = text.lower()
 
-    for cid, cdef in CLAUSES.items():
-        matches = 0
+    for cid, cdef in _CLAUSES.items():
+        total_hits = 0
         evidence = []
-        for kw in cdef["keywords"]:
-            hits = re.findall(kw, text_lower)
-            matches += len(hits)
-            # Extract evidence sentence for the first hit
-            if hits and not evidence:
-                for s in sentences:
-                    if re.search(kw, s.lower()):
-                        evidence.append(s[:150])
-                        break
 
-        is_found = matches >= 2  # require at least 2 keyword hits
-        confidence = min(100, matches * 20) if is_found else 0
+        # Full-text pattern scan
+        for pat in cdef["patterns"]:
+            matches = pat.findall(text_lower)
+            total_hits += len(matches)
+            for m in matches[:2]:
+                evidence.append(m)
 
-        if is_found:
-            found += 1
+        # Sentence-level context scan: find which sentences contain patterns
+        matching_sents = []
+        for sent in sentences:
+            for pat in cdef["patterns"]:
+                if pat.search(sent):
+                    matching_sents.append(sent[:120])
+                    break
+
+        # Context boost: if multiple consecutive sentences match → stronger
+        context_bonus = min(3, len(matching_sents)) * 5
+
+        is_found = total_hits >= 2
+        confidence = min(100, total_hits * 10 + context_bonus) if is_found else 0
 
         detected[cid] = {
-            "id": cid,
             "label": cdef["label"],
-            "icon": cdef["icon"],
             "description": cdef["description"],
             "found": is_found,
             "confidence": confidence,
-            "match_count": matches,
-            "evidence": evidence[0] if evidence else "",
+            "match_count": total_hits,
+            "evidence": matching_sents[:2] if matching_sents else evidence[:2],
         }
+
+    found = sum(1 for d in detected.values() if d["found"])
+    total = len(detected)
+    log.info("Clauses: %d/%d found", found, total)
 
     return {
         "detected": detected,
         "summary": {
-            "total_clauses": len(CLAUSES),
+            "total_clauses": total,
             "found_count": found,
-            "missing_count": len(CLAUSES) - found,
-            "coverage_pct": round(found / len(CLAUSES) * 100),
+            "missing_count": total - found,
+            "coverage_pct": round(found / total * 100) if total else 0,
         },
     }

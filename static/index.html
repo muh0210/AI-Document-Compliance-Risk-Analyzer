@@ -3,93 +3,143 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="AI Document Compliance & Risk Analyzer - Upload legal documents for instant compliance scoring, risk detection, and actionable recommendations.">
-    <title>AI Document Compliance & Risk Analyzer</title>
-    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🛡️</text></svg>">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <meta name="description" content="AI-powered compliance analysis for legal documents. Get instant scoring, risk detection, and actionable recommendations.">
+    <title>Compliance Analyzer — AI Document Risk Assessment</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>⚖️</text></svg>">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Header -->
-    <header class="hero">
-        <span class="badge" id="badge">AI-Powered Analysis Engine</span>
-        <h1 class="hero-title">Document Compliance<br>&amp; Risk Analyzer</h1>
-        <p class="hero-sub">Upload any business document and get instant AI-powered compliance scoring, risk detection, and actionable recommendations.</p>
-    </header>
-
-    <!-- Upload -->
-    <section class="upload-section" id="uploadSection">
-        <div class="upload-box" id="uploadBox">
-            <div class="upload-icon">📄</div>
-            <p class="upload-title">Drop your document here</p>
-            <p class="upload-sub">or click to browse &middot; PDF, DOCX, TXT</p>
-            <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" hidden>
+    <nav class="topbar">
+        <div class="topbar-left">
+            <span class="logo">⚖️</span>
+            <span class="logo-text">Compliance<span class="logo-dot">.</span></span>
         </div>
-        <div class="file-info" id="fileInfo" style="display:none">
-            <span id="fileName"></span>
-            <button class="clear-btn" id="clearBtn">✕</button>
+        <div class="topbar-right">
+            <span class="ver">v2.0</span>
         </div>
-        <button class="analyze-btn" id="analyzeBtn" style="display:none">🔍 Analyze Document</button>
-    </section>
+    </nav>
 
-    <!-- Loader -->
-    <div class="loader" id="loader" style="display:none">
-        <div class="spinner"></div>
-        <p>Running AI analysis pipeline...</p>
-    </div>
+    <main>
+        <!-- Hero -->
+        <section class="hero" id="hero">
+            <p class="eyebrow">Document Intelligence</p>
+            <h1>Know what's in your<br>contracts <em>before</em> you sign.</h1>
+            <p class="hero-desc">Upload a legal document and get an instant compliance audit — clause detection, risk scoring, and plain-English recommendations. No account needed.</p>
+        </section>
 
-    <!-- Results -->
-    <section id="results" style="display:none">
-        <div class="glass-card score-card">
-            <h2 class="card-title">📊 Compliance Score</h2>
-            <div class="score-ring" id="scoreRing">
-                <span class="score-number" id="scoreNumber">0</span>
+        <!-- Upload -->
+        <section class="upload-wrap" id="uploadWrap">
+            <div class="upload-area" id="uploadArea">
+                <div class="upload-inner">
+                    <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    <p class="upload-cta">Drop your file here, or <span class="upload-link">browse</span></p>
+                    <p class="upload-hint">PDF, DOCX, or TXT — up to 5 MB</p>
+                </div>
+                <input type="file" id="fileInput" accept=".pdf,.docx,.doc,.txt" hidden>
             </div>
-            <p class="score-label">OUT OF 100</p>
-            <span class="grade-badge" id="gradeBadge"></span>
-            <p class="narrative" id="narrative"></p>
-            <div class="score-breakdown" id="breakdown"></div>
-            <button class="analyze-btn visible" id="pdfBtn" style="margin-top:24px;background:linear-gradient(135deg,#6c63ff,#00d4aa)">📄 Download PDF Report</button>
-        </div>
+            <div class="file-row" id="fileRow" style="display:none">
+                <div class="file-chip">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" width="16" height="16"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+                    <span id="fileName">—</span>
+                    <span id="fileSize"></span>
+                    <button class="x-btn" id="clearBtn" aria-label="Remove file">&times;</button>
+                </div>
+            </div>
+            <button class="primary-btn" id="analyzeBtn" style="display:none">
+                <span class="btn-text">Analyze Document</span>
+                <span class="btn-arrow">&rarr;</span>
+            </button>
+        </section>
 
-        <div class="glass-card">
-            <h2 class="card-title">📋 Document Overview</h2>
-            <div class="stats-grid" id="docStats"></div>
-        </div>
+        <!-- Progress -->
+        <section class="progress-section" id="progressSection" style="display:none">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <p class="progress-label" id="progressLabel">Starting analysis…</p>
+        </section>
 
-        <div class="glass-card" id="criticalCard" style="display:none">
-            <h2 class="card-title">🚨 Critical Findings</h2>
-            <div id="criticalList"></div>
-        </div>
+        <!-- Error -->
+        <section class="error-section" id="errorSection" style="display:none">
+            <div class="error-box">
+                <p id="errorMessage"></p>
+                <button class="ghost-btn" id="errorDismiss">Try again</button>
+            </div>
+        </section>
 
-        <div class="glass-card">
-            <h2 class="card-title" id="clauseTitle">🔎 Clause Detection</h2>
-            <div class="clause-grid" id="clauseGrid"></div>
-        </div>
+        <!-- Results -->
+        <section id="results" style="display:none">
 
-        <div class="glass-card">
-            <h2 class="card-title" id="riskTitle">⚠️ Risk Alerts</h2>
-            <div class="severity-badges" id="sevBadges"></div>
-            <div id="riskList"></div>
-        </div>
+            <!-- Score Hero -->
+            <div class="score-hero" id="scoreHero">
+                <div class="score-left">
+                    <p class="score-label-top">Compliance Score</p>
+                    <div class="score-big" id="scoreNum">0</div>
+                    <div class="score-badge" id="scoreBadge"></div>
+                </div>
+                <div class="score-right">
+                    <p class="score-narrative" id="narrative"></p>
+                    <div class="score-meta">
+                        <span class="doc-type-chip" id="docTypeChip"></span>
+                        <span class="score-meta-item" id="metaWords"></span>
+                        <span class="score-meta-item" id="metaSents"></span>
+                    </div>
+                </div>
+            </div>
 
-        <div class="glass-card" id="actionsCard" style="display:none">
-            <h2 class="card-title">💡 Recommended Actions</h2>
-            <div id="actionList"></div>
-        </div>
+            <!-- Breakdown -->
+            <div class="section-card" id="breakdownCard">
+                <h2 class="sec-title">Score Breakdown</h2>
+                <div class="breakdown-grid" id="breakdownGrid"></div>
+            </div>
 
-        <div class="glass-card" id="rewritesCard" style="display:none">
-            <h2 class="card-title">✍️ Suggested Rewrites</h2>
-            <div id="rewriteList"></div>
-        </div>
-    </section>
+            <!-- Score Reduction Reasons -->
+            <div class="section-card" id="reductionCard" style="display:none">
+                <h2 class="sec-title">Why the Score Was Reduced</h2>
+                <div id="reductionList"></div>
+            </div>
 
-    <!-- Error -->
-    <div class="error-toast" id="errorToast"></div>
+            <!-- Critical -->
+            <div class="section-card accent-red" id="criticalCard" style="display:none">
+                <h2 class="sec-title">Critical Findings</h2>
+                <div id="criticalList"></div>
+            </div>
 
-    <!-- Footer -->
-    <footer class="footer">
-        <p>🛡️ AI Document Compliance & Risk Analyzer v1.0.0</p>
+            <!-- Clauses -->
+            <div class="section-card">
+                <h2 class="sec-title" id="clauseTitle">Clause Coverage</h2>
+                <div class="clause-grid" id="clauseGrid"></div>
+            </div>
+
+            <!-- Risks -->
+            <div class="section-card">
+                <h2 class="sec-title" id="riskTitle">Risk Alerts</h2>
+                <div class="severity-row" id="sevBadges"></div>
+                <div id="riskList"></div>
+            </div>
+
+            <!-- Actions -->
+            <div class="section-card" id="actionsCard" style="display:none">
+                <h2 class="sec-title">Recommended Actions</h2>
+                <div id="actionList"></div>
+            </div>
+
+            <!-- Rewrites -->
+            <div class="section-card" id="rewritesCard" style="display:none">
+                <h2 class="sec-title">Language Improvements</h2>
+                <div id="rewriteList"></div>
+            </div>
+
+            <!-- Export -->
+            <div class="export-row">
+                <button class="primary-btn" id="pdfBtn">Download PDF Report &darr;</button>
+                <button class="ghost-btn" id="csvBtn">Export CSV</button>
+                <button class="ghost-btn" id="jsonBtn">Export JSON</button>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <p>Built for legal clarity. Not legal advice. &nbsp;·&nbsp; v2.0.0</p>
     </footer>
 
     <script src="app.js"></script>

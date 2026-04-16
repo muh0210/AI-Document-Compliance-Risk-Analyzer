@@ -1,59 +1,72 @@
-/* ═══════════════ AI Document Compliance & Risk Analyzer ═══════════════ */
+/* ═══════════════════════════════════════════════════
+   Compliance Analyzer v2.0 — Frontend Logic
+   Upload progress, structured errors, export
+   ═══════════════════════════════════════════════════ */
 
-const uploadBox    = document.getElementById('uploadBox');
-const fileInput    = document.getElementById('fileInput');
-const fileInfo     = document.getElementById('fileInfo');
-const fileName     = document.getElementById('fileName');
-const clearBtn     = document.getElementById('clearBtn');
-const analyzeBtn   = document.getElementById('analyzeBtn');
-const loader       = document.getElementById('loader');
-const results      = document.getElementById('results');
-const errorToast   = document.getElementById('errorToast');
+const $ = id => document.getElementById(id);
+
+const uploadArea     = $('uploadArea');
+const fileInput      = $('fileInput');
+const fileRow        = $('fileRow');
+const analyzeBtn     = $('analyzeBtn');
+const progressSec    = $('progressSection');
+const progressFill   = $('progressFill');
+const progressLabel  = $('progressLabel');
+const errorSec       = $('errorSection');
+const results        = $('results');
 
 let selectedFile = null;
 
-// ── Upload handlers ─────────────────────────────────────
+/* ── Upload ────────────────────────────────────── */
 
-uploadBox.addEventListener('click', () => fileInput.click());
-uploadBox.addEventListener('dragover', e => { e.preventDefault(); uploadBox.classList.add('dragover'); });
-uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
-uploadBox.addEventListener('drop', e => {
-    e.preventDefault();
-    uploadBox.classList.remove('dragover');
-    if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+uploadArea.addEventListener('click', () => fileInput.click());
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+uploadArea.addEventListener('drop', e => {
+    e.preventDefault(); uploadArea.classList.remove('dragover');
+    if (e.dataTransfer.files.length) pickFile(e.dataTransfer.files[0]);
 });
-fileInput.addEventListener('change', () => { if (fileInput.files.length) handleFile(fileInput.files[0]); });
-clearBtn.addEventListener('click', clearFile);
-analyzeBtn.addEventListener('click', runAnalysis);
+fileInput.addEventListener('change', () => { if (fileInput.files.length) pickFile(fileInput.files[0]); });
+$('clearBtn').addEventListener('click', clearFile);
+analyzeBtn.addEventListener('click', analyze);
+$('errorDismiss').addEventListener('click', () => { errorSec.style.display = 'none'; });
 
-function handleFile(file) {
+function pickFile(file) {
     const ok = ['.pdf','.docx','.doc','.txt'];
     const ext = '.' + file.name.split('.').pop().toLowerCase();
-    if (!ok.includes(ext)) { showError('Unsupported file type. Use PDF, DOCX, or TXT.'); return; }
-    if (file.size > 20 * 1024 * 1024) { showError('File too large. Max 20 MB.'); return; }
+    if (!ok.includes(ext)) return showError('INVALID_FILE', 'Unsupported file. Use PDF, DOCX, or TXT.');
+    if (file.size > 5 * 1024 * 1024) return showError('FILE_TOO_LARGE', 'File exceeds 5 MB limit.');
     selectedFile = file;
-    fileName.textContent = `${file.name} (${(file.size/1024).toFixed(1)} KB)`;
-    fileInfo.style.display = 'flex';
-    analyzeBtn.style.display = 'block';
-    analyzeBtn.classList.add('visible');
+    $('fileName').textContent = file.name;
+    $('fileSize').textContent = formatSize(file.size);
+    fileRow.style.display = 'block';
+    analyzeBtn.style.display = 'inline-flex';
     results.style.display = 'none';
+    errorSec.style.display = 'none';
 }
 
 function clearFile() {
-    selectedFile = null;
-    fileInput.value = '';
-    fileInfo.style.display = 'none';
+    selectedFile = null; fileInput.value = '';
+    fileRow.style.display = 'none';
     analyzeBtn.style.display = 'none';
     results.style.display = 'none';
 }
 
-// ── Analysis ────────────────────────────────────────────
+function formatSize(b) {
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+}
 
-async function runAnalysis() {
+/* ── Analysis ──────────────────────────────────── */
+
+async function analyze() {
     if (!selectedFile) return;
-    loader.style.display = 'block';
+    progressSec.style.display = 'block';
     results.style.display = 'none';
+    errorSec.style.display = 'none';
     analyzeBtn.style.display = 'none';
+    animateProgress();
 
     const fd = new FormData();
     fd.append('file', selectedFile);
@@ -61,158 +74,224 @@ async function runAnalysis() {
     try {
         const res = await fetch('/api/analyze', { method: 'POST', body: fd });
         const data = await res.json();
-        if (!res.ok || !data.success) { showError(data.error || 'Analysis failed.'); loader.style.display = 'none'; analyzeBtn.style.display = 'block'; return; }
-        renderResults(data);
-    } catch (err) {
-        showError('Server error. Please try again.');
+        if (!data.success) {
+            const e = data.error || {};
+            showError(e.code || 'UNKNOWN', e.message || 'Analysis failed.');
+            progressSec.style.display = 'none';
+            analyzeBtn.style.display = 'inline-flex';
+            return;
+        }
+        finishProgress();
+        setTimeout(() => {
+            progressSec.style.display = 'none';
+            render(data);
+        }, 600);
+    } catch {
+        showError('NETWORK', 'Could not reach the server. Is it running?');
+        progressSec.style.display = 'none';
+        analyzeBtn.style.display = 'inline-flex';
     }
-    loader.style.display = 'none';
 }
 
-// ── Render ───────────────────────────────────────────────
+/* ── Progress Animation ────────────────────────── */
 
-function renderResults(data) {
+const STEPS = [
+    [15, 'Extracting text…'], [35, 'Running NLP pipeline…'],
+    [55, 'Detecting clauses…'], [70, 'Analyzing risks…'],
+    [85, 'Calculating score…'], [95, 'Generating report…'],
+];
+let stepIdx = 0, animTimer;
+
+function animateProgress() {
+    stepIdx = 0;
+    progressFill.style.width = '0%';
+    animTimer = setInterval(() => {
+        if (stepIdx < STEPS.length) {
+            const [pct, label] = STEPS[stepIdx];
+            progressFill.style.width = pct + '%';
+            progressLabel.textContent = label;
+            stepIdx++;
+        }
+    }, 700);
+}
+
+function finishProgress() {
+    clearInterval(animTimer);
+    progressFill.style.width = '100%';
+    progressLabel.textContent = 'Analysis complete.';
+}
+
+/* ── Error ──────────────────────────────────────── */
+
+function showError(code, message) {
+    $('errorMessage').textContent = `[${code}] ${message}`;
+    errorSec.style.display = 'block';
+    errorSec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* ── Render Results ────────────────────────────── */
+
+function render(data) {
     const { score, document: doc, clauses, risks, explanations, rewrites } = data;
 
-    // Score
-    const scoreNum = document.getElementById('scoreNumber');
-    const ring = document.getElementById('scoreRing');
-    scoreNum.textContent = score.score;
-    scoreNum.style.color = score.color;
-    ring.style.borderColor = score.color + '40';
-
-    const badge = document.getElementById('gradeBadge');
+    // Score hero
+    const sn = $('scoreNum');
+    sn.textContent = score.score;
+    sn.style.color = score.color;
+    const badge = $('scoreBadge');
     badge.textContent = `${score.grade} — ${score.label}`;
-    badge.style.background = score.color + '15';
+    badge.style.background = score.color + '12';
     badge.style.color = score.color;
-    badge.style.border = `1px solid ${score.color}30`;
+    badge.style.border = `1px solid ${score.color}25`;
 
-    document.getElementById('narrative').textContent = explanations.overall_assessment.narrative;
+    $('narrative').textContent = explanations.overall_assessment.narrative;
+
+    // Doc type + meta
+    const dt = doc.document_type || {};
+    $('docTypeChip').textContent = (dt.label || 'Document') + (dt.confidence ? ` · ${dt.confidence}%` : '');
+    $('metaWords').textContent = `${(doc.word_count || 0).toLocaleString()} words`;
+    $('metaSents').textContent = `${doc.sentence_count || 0} sentences`;
 
     // Breakdown
-    const bd = document.getElementById('breakdown');
-    bd.innerHTML = '';
-    const items = [
-        ['Clause Coverage', 'clause_coverage', '#6c63ff'],
-        ['Risk Safety', 'risk_density', '#00d4aa'],
-        ['Structure', 'structure', '#4fc3f7'],
-        ['Clarity', 'clarity', '#ffab40'],
-    ];
-    items.forEach(([lbl, key, clr]) => {
+    const grid = $('breakdownGrid');
+    grid.innerHTML = '';
+    const cols = { clause_coverage: '#637dff', risk_density: '#3dd6a5', structure: '#4fc3f7', clarity: '#e8a33d' };
+    const labels = { clause_coverage: 'Clause Coverage', risk_density: 'Risk Safety', structure: 'Structure', clarity: 'Clarity' };
+    for (const [key, clr] of Object.entries(cols)) {
         const b = score.breakdown[key];
+        if (!b) continue;
         const pct = b.max ? Math.round((b.score / b.max) * 100) : 0;
-        bd.innerHTML += `<div class="bd-item">
-            <div class="bd-label" style="color:${clr}">${lbl}</div>
-            <div class="bd-bar"><div class="bd-fill" style="width:${pct}%;background:${clr}"></div></div>
+        grid.innerHTML += `<div class="bd-card">
+            <div class="bd-label" style="color:${clr}">${labels[key]}</div>
+            <div class="bd-bar"><div class="bd-bar-fill" style="width:${pct}%;background:${clr}"></div></div>
             <div class="bd-score" style="color:${clr}">${b.score} / ${b.max}</div>
             <div class="bd-detail">${b.details}</div>
         </div>`;
-    });
+    }
 
-    // Doc stats
-    const stats = document.getElementById('docStats');
-    stats.innerHTML = '';
-    [['Words', doc.word_count], ['Sentences', doc.sentence_count], ['Paragraphs', doc.paragraph_count],
-     ['Sections', doc.section_count], ['Characters', doc.char_count]].forEach(([l, v]) => {
-        stats.innerHTML += `<div class="stat-box"><div class="stat-value">${(v||0).toLocaleString()}</div><div class="stat-label">${l}</div></div>`;
-    });
+    // Score reduction reasons
+    const reasons = explanations.score_reduction_reasons || [];
+    const rc = $('reductionCard');
+    const rl = $('reductionList');
+    if (reasons.length) {
+        rc.style.display = 'block';
+        rl.innerHTML = reasons.map(r =>
+            `<div class="reduction-item">
+                <span class="reduction-pts">-${r.points_lost}</span>
+                <span class="reduction-text">${r.reason}</span>
+            </div>`
+        ).join('');
+    } else rc.style.display = 'none';
 
-    // Critical
+    // Critical findings
     const crits = explanations.critical_findings || [];
-    const critCard = document.getElementById('criticalCard');
-    const critList = document.getElementById('criticalList');
+    const cc = $('criticalCard');
     if (crits.length) {
-        critCard.style.display = 'block';
-        critList.innerHTML = crits.map(f => `<div class="risk-item risk-high">
-            <div class="risk-cat">[!] ${f.title}</div>
-            <div class="risk-desc">${f.explanation}</div>
-        </div>`).join('');
-    } else { critCard.style.display = 'none'; }
+        cc.style.display = 'block';
+        $('criticalList').innerHTML = crits.map(f =>
+            `<div class="risk risk-high">
+                <div class="risk-top"><span class="risk-cat">${f.title}</span></div>
+                <div class="risk-desc">${f.explanation}</div>
+                ${f.if_ignored ? `<div class="action-impact">If ignored: ${f.if_ignored}</div>` : ''}
+            </div>`
+        ).join('');
+    } else cc.style.display = 'none';
 
     // Clauses
-    document.getElementById('clauseTitle').textContent = `🔎 Clause Detection — ${clauses.summary.found_count}/${clauses.summary.total_clauses}`;
-    const cg = document.getElementById('clauseGrid');
-    cg.innerHTML = '';
-    Object.entries(clauses.detected).forEach(([, c]) => {
+    $('clauseTitle').textContent = `Clause Coverage — ${clauses.summary.found_count}/${clauses.summary.total_clauses}`;
+    const cg = $('clauseGrid');
+    cg.innerHTML = Object.values(clauses.detected).map(c => {
         const cls = c.found ? 'clause-found' : 'clause-missing';
-        const status = c.found ? `<span style="color:#00e676">✅ ${c.confidence}%</span>` : '<span style="color:#ff5252">❌ Missing</span>';
-        cg.innerHTML += `<div class="clause-item ${cls}">
-            <span class="clause-name">${c.label}</span><span class="clause-status">${status}</span>
-            <div class="clause-desc">${c.description}</div>
+        const st = c.found
+            ? `<span class="clause-status found">${c.confidence}%</span>`
+            : `<span class="clause-status missing">Missing</span>`;
+        return `<div class="clause ${cls}">
+            <div><div class="clause-name">${c.label}</div><div class="clause-sub">${c.description}</div></div>
+            ${st}
         </div>`;
-    });
+    }).join('');
 
     // Risks
     const rs = risks.summary;
-    document.getElementById('riskTitle').textContent = `⚠️ Risk Alerts — ${rs.total_risks} Risks`;
-    document.getElementById('sevBadges').innerHTML = `
-        <span class="sev-badge sev-HIGH">HIGH: ${rs.high}</span>
-        <span class="sev-badge sev-MEDIUM">MEDIUM: ${rs.medium}</span>
-        <span class="sev-badge sev-LOW">LOW: ${rs.low}</span>`;
-    const rl = document.getElementById('riskList');
-    rl.innerHTML = risks.risks.slice(0, 12).map(r => {
+    $('riskTitle').textContent = `Risk Alerts — ${rs.total_risks} found`;
+    $('sevBadges').innerHTML = `
+        <span class="sev-tag sev-HIGH">HIGH ${rs.high}</span>
+        <span class="sev-tag sev-MEDIUM">MEDIUM ${rs.medium}</span>
+        <span class="sev-tag sev-LOW">LOW ${rs.low}</span>`;
+    $('riskList').innerHTML = risks.risks.slice(0, 15).map(r => {
         const cls = `risk-${r.severity.toLowerCase()}`;
-        return `<div class="risk-item ${cls}">
-            <div class="risk-cat">[${r.severity}] ${r.category_label}</div>
-            <div class="risk-sent">"${r.sentence.slice(0, 150)}"</div>
+        return `<div class="risk ${cls}">
+            <div class="risk-top">
+                <span class="risk-cat">${r.category_label}</span>
+                <span class="risk-sev sev-${r.severity}">${r.severity}</span>
+            </div>
+            ${r.sentence ? `<div class="risk-quote">"${r.sentence.slice(0, 150)}"</div>` : ''}
             <div class="risk-desc">${r.description}</div>
         </div>`;
     }).join('');
 
     // Actions
     const acts = explanations.action_items || [];
-    const actCard = document.getElementById('actionsCard');
-    const actList = document.getElementById('actionList');
+    const ac = $('actionsCard');
     if (acts.length) {
-        actCard.style.display = 'block';
-        actList.innerHTML = acts.map((a, i) => {
-            const clr = a.severity === 'HIGH' ? '#ff5252' : (a.severity === 'MEDIUM' ? '#ffab40' : '#ffd740');
-            return `<div class="action-item">
-                <div class="action-num" style="background:${clr}20;color:${clr}">${i + 1}</div>
-                <div><div class="action-title">${a.action}</div><div class="action-detail">${a.detail}</div></div>
+        ac.style.display = 'block';
+        $('actionList').innerHTML = acts.map((a, i) => {
+            const clr = a.severity === 'HIGH' ? 'var(--danger)' : (a.severity === 'MEDIUM' ? 'var(--warn)' : '#ffd740');
+            return `<div class="action">
+                <div class="action-idx" style="background:${clr}18;color:${clr}">${i + 1}</div>
+                <div class="action-body">
+                    <h4>${a.action}</h4>
+                    <p>${a.detail}</p>
+                    ${a.if_ignored ? `<div class="action-impact">If ignored: ${a.if_ignored}</div>` : ''}
+                </div>
             </div>`;
         }).join('');
-    } else { actCard.style.display = 'none'; }
+    } else ac.style.display = 'none';
 
     // Rewrites
-    const rwCard = document.getElementById('rewritesCard');
-    const rwList = document.getElementById('rewriteList');
+    const rwc = $('rewritesCard');
     if (rewrites && rewrites.length) {
-        rwCard.style.display = 'block';
-        rwList.innerHTML = rewrites.slice(0, 8).map(rw => {
-            const tags = (rw.changes || []).map(c => `<span class="rewrite-tag">${c}</span>`).join(' ');
-            return `<div class="rewrite-box">
-                <div class="rewrite-orig"><div class="rewrite-lbl" style="color:#ff5252">Original</div>${rw.original.slice(0, 180)}</div>
-                <div class="rewrite-impr"><div class="rewrite-lbl" style="color:#00d4aa">Improved</div>${rw.rewritten.slice(0, 180)}<div style="margin-top:6px">${tags}</div></div>
+        rwc.style.display = 'block';
+        $('rewriteList').innerHTML = rewrites.slice(0, 8).map(rw => {
+            const tags = (rw.changes || []).map(c => `<span class="rw-tag">${c}</span>`).join('');
+            return `<div class="rewrite">
+                <div class="rw-orig"><div class="rw-label" style="color:var(--danger)">Original</div>${rw.original.slice(0, 200)}</div>
+                <div class="rw-impr"><div class="rw-label" style="color:var(--accent2)">Improved</div>${rw.rewritten.slice(0, 200)}<div class="rw-tags">${tags}</div></div>
             </div>`;
         }).join('');
-    } else { rwCard.style.display = 'none'; }
+    } else rwc.style.display = 'none';
 
     results.style.display = 'block';
+    $('scoreHero').scrollIntoView({ behavior: 'smooth', block: 'start' });
 }
 
-// ── PDF Download ────────────────────────────────────────
+/* ── Export ─────────────────────────────────────── */
 
-document.getElementById('pdfBtn').addEventListener('click', async () => {
+$('pdfBtn').addEventListener('click', async () => {
     try {
         const res = await fetch('/api/report', { method: 'POST' });
-        if (!res.ok) { const d = await res.json(); showError(d.error || 'PDF failed.'); return; }
-        const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `compliance_report_${Date.now()}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    } catch { showError('PDF download failed.'); }
+        if (!res.ok) { const d = await res.json(); showError(d.error?.code || 'PDF', d.error?.message || 'Download failed.'); return; }
+        download(await res.blob(), `compliance_report_${Date.now()}.pdf`);
+    } catch { showError('NETWORK', 'PDF download failed.'); }
 });
 
-// ── Error toast ─────────────────────────────────────────
+$('csvBtn').addEventListener('click', () => exportAs('csv'));
+$('jsonBtn').addEventListener('click', () => exportAs('json'));
 
-function showError(msg) {
-    errorToast.textContent = '⚠️ ' + msg;
-    errorToast.classList.add('visible');
-    setTimeout(() => errorToast.classList.remove('visible'), 5000);
+async function exportAs(fmt) {
+    try {
+        const res = await fetch(`/api/export/${fmt}`, { method: 'POST' });
+        if (!res.ok) { const d = await res.json(); showError(d.error?.code || 'EXPORT', d.error?.message || 'Export failed.'); return; }
+        download(await res.blob(), `compliance_export_${Date.now()}.${fmt}`);
+    } catch { showError('NETWORK', 'Export failed.'); }
+}
+
+function download(blob, name) {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(a.href);
 }
